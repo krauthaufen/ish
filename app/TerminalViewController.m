@@ -369,6 +369,16 @@
     if (pad != keyboardFrame.size.height && keyboardFrame.size.width != UIScreen.mainScreen.bounds.size.width) {
         pad = MAX(self.view.safeAreaInsets.bottom, self.termView.inputAccessoryView.frame.size.height);
     }
+
+    // If keyboard is hiding because focus moved away from our terminal view
+    // (e.g., to WKWebView for text selection), skip the resize so the terminal
+    // doesn't reflow and move the text the user is trying to select.
+    BOOL keyboardHiding = pad <= self.view.safeAreaInsets.bottom + 10;
+    if (keyboardHiding && !self.termView.isFirstResponder) {
+        self.showKeyboardButton.hidden = NO;
+        return;
+    }
+
     // NSLog(@"pad %f", pad);
     self.bottomConstraint.constant = pad;
 
