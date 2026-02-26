@@ -51,6 +51,7 @@
 
 @property BOOL ignoreKeyboardMotion;
 @property (nonatomic) BOOL hasExternalKeyboard;
+@property UIButton *showKeyboardButton;
 
 @end
 
@@ -127,6 +128,27 @@
         });
     }];
     [self _updateBadge];
+
+    // Floating show-keyboard button (visible when keyboard is hidden)
+    if (@available(iOS 13, *)) {
+        UIButton *kbButton = [UIButton buttonWithType:UIButtonTypeSystem];
+        UIImageSymbolConfiguration *config = [UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightMedium];
+        [kbButton setImage:[UIImage systemImageNamed:@"keyboard" withConfiguration:config] forState:UIControlStateNormal];
+        kbButton.tintColor = UIColor.whiteColor;
+        kbButton.backgroundColor = [UIColor colorWithWhite:0.3 alpha:0.8];
+        kbButton.layer.cornerRadius = 22;
+        kbButton.translatesAutoresizingMaskIntoConstraints = NO;
+        [kbButton addTarget:self action:@selector(showKeyboard:) forControlEvents:UIControlEventTouchUpInside];
+        kbButton.hidden = YES;
+        [self.view addSubview:kbButton];
+        [NSLayoutConstraint activateConstraints:@[
+            [kbButton.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-16],
+            [kbButton.bottomAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.bottomAnchor constant:-8],
+            [kbButton.widthAnchor constraintEqualToConstant:44],
+            [kbButton.heightAnchor constraintEqualToConstant:44],
+        ]];
+        self.showKeyboardButton = kbButton;
+    }
 }
 
 - (void)awakeFromNib {
@@ -350,6 +372,10 @@
     // NSLog(@"pad %f", pad);
     self.bottomConstraint.constant = pad;
 
+    // Show floating keyboard button when keyboard is hidden
+    BOOL keyboardVisible = pad > self.view.safeAreaInsets.bottom + 10;
+    self.showKeyboardButton.hidden = keyboardVisible;
+
     BOOL initialLayout = self.termView.needsUpdateConstraints;
     [self.view setNeedsUpdateConstraints];
     if (!initialLayout) {
@@ -364,6 +390,10 @@
                          }
                          completion:nil];
     }
+}
+
+- (void)showKeyboard:(id)sender {
+    [self.termView becomeFirstResponder];
 }
 
 - (void)setHasExternalKeyboard:(BOOL)hasExternalKeyboard {
