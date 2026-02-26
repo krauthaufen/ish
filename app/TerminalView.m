@@ -48,6 +48,9 @@ struct rowcol {
 
 @property CGFloat lastPanY;
 @property CGFloat accumulatedScrollDelta;
+@property CGFloat scrollAccumulator;
+@property CGFloat lastScrollTop;
+@property BOOL resettingScroll;
 @property CGFloat characterHeight;
 @property UIPanGestureRecognizer *mouseScrollGesture;
 
@@ -269,15 +272,40 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
         self.scrollbarView.contentSize = CGSizeMake(0, [message.body doubleValue]);
     } else if ([message.name isEqualToString:@"newScrollTop"]) {
         CGFloat newOffset = [message.body doubleValue];
+        self.lastScrollTop = newOffset;
         if (self.scrollbarView.contentOffset.y == newOffset)
             return;
+        self.resettingScroll = YES;
         [self.scrollbarView setContentOffset:CGPointMake(0, newOffset) animated:NO];
+        self.resettingScroll = NO;
     } else if ([message.name isEqualToString:@"openLink"]) {
         [UIApplication openURL:message.body];
     }
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (self.resettingScroll) return;
+
+    if (self.terminal.mouseReport.intValue > 0) {
+        // Mouse reporting active — convert scroll to wheel events
+        CGFloat delta = scrollView.contentOffset.y - self.lastScrollTop;
+        self.scrollAccumulator += delta;
+        CGFloat threshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
+        while (fabs(self.scrollAccumulator) >= threshold) {
+            CGFloat direction = self.scrollAccumulator > 0 ? 1.0 : -1.0;
+            [self.terminal.webView evaluateJavaScript:
+                [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
+                completionHandler:nil];
+            self.scrollAccumulator -= direction * threshold;
+        }
+        // Reset scroll position to prevent buffer scrolling
+        self.resettingScroll = YES;
+        [scrollView setContentOffset:CGPointMake(0, self.lastScrollTop) animated:NO];
+        self.resettingScroll = NO;
+        return;
+    }
+
+    self.lastScrollTop = scrollView.contentOffset.y;
     [self.terminal.webView evaluateJavaScript:[NSString stringWithFormat:@"exports.newScrollTop(%f)", scrollView.contentOffset.y] completionHandler:nil];
 }
 
