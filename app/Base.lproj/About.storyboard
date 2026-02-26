@@ -947,7 +947,7 @@
                                             <nil key="textColor"/>
                                             <nil key="highlightedColor"/>
                                         </label>
-                                        <stepper opaque="NO" tag="2" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="1" minimumValue="1" maximumValue="20" translatesAutoresizingMaskIntoConstraints="NO" id="sSp-sT-3gH">
+                                        <stepper opaque="NO" tag="2" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="10" minimumValue="1" maximumValue="20" translatesAutoresizingMaskIntoConstraints="NO" id="sSp-sT-3gH">
                                             <rect key="frame" x="210" y="6" width="94" height="32"/>
                                             <connections>
                                                 <action selector="scrollSpeedChanged:" destination="ItN-wa-djf" eventType="valueChanged" id="sSp-aC-4iJ"/>

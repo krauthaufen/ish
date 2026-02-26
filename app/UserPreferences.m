@@ -155,7 +155,7 @@ bool (*remove_user_default)(const char *name);
         _defaults = [NSUserDefaults standardUserDefaults];
         [_defaults registerDefaults:@{
             kPreferenceFontSizeKey: @(12),
-            kPreferenceScrollSpeedKey: @(1),
+            kPreferenceScrollSpeedKey: @(10),
             kPreferenceCapsLockMappingKey: @(CapsLockMapControl),
             kPreferenceOptionMappingKey: @(OptionMapNone),
             kPreferenceBacktickEscapeKey: @(NO),
