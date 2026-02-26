@@ -55,7 +55,6 @@ struct rowcol {
 @property BOOL resettingScroll;
 @property CGFloat characterHeight;
 @property UIPanGestureRecognizer *mouseScrollGesture;
-@property BOOL intentionalResign;
 
 @end
 
@@ -104,9 +103,16 @@ struct rowcol {
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context {
     if (object == _terminal) {
-        if (_terminal.loaded) {
-            [self installTerminalView];
-            [self _updateStyle];
+        if ([keyPath isEqualToString:@"loaded"]) {
+            if (_terminal.loaded) {
+                [self installTerminalView];
+                [self _updateStyle];
+            }
+        } else if ([keyPath isEqualToString:@"mouseReport"]) {
+            BOOL mouseActive = _terminal.mouseReport.intValue > 0;
+            self.scrollbarView.scrollEnabled = !mouseActive;
+            self.scrollAccumulator = 0;
+            self.scrollLineAccumulator = 0;
         }
     }
 }
@@ -116,11 +122,13 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 - (void)setTerminal:(Terminal *)terminal {
     if (_terminal) {
         [_terminal removeObserver:self forKeyPath:@"loaded"];
+        [_terminal removeObserver:self forKeyPath:@"mouseReport"];
         [self uninstallTerminalView];
     }
 
     _terminal = terminal;
     [_terminal addObserver:self forKeyPath:@"loaded" options:NSKeyValueObservingOptionInitial context:nil];
+    [_terminal addObserver:self forKeyPath:@"mouseReport" options:0 context:nil];
     if (_terminal.loaded)
         [self installTerminalView];
 }
@@ -229,16 +237,7 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 }
 - (BOOL)resignFirstResponder {
     self.terminalFocused = NO;
-    BOOL result = [super resignFirstResponder];
-    if (!self.intentionalResign) {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (!self.isFirstResponder) {
-                [self becomeFirstResponder];
-            }
-        });
-    }
-    self.intentionalResign = NO;
-    return result;
+    return [super resignFirstResponder];
 }
 - (void)windowDidBecomeKey:(NSNotification *)notif {
     self.terminalFocused = YES;
@@ -248,7 +247,6 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 }
 
 - (IBAction)loseFocus:(id)sender {
-    self.intentionalResign = YES;
     [self resignFirstResponder];
 }
 
@@ -375,7 +373,6 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 - (void)setKeyboardAppearance:(UIKeyboardAppearance)keyboardAppearance {
     BOOL needsFirstResponderDance = self.isFirstResponder && _keyboardAppearance != keyboardAppearance;
     if (needsFirstResponderDance) {
-        self.intentionalResign = YES;
         [self resignFirstResponder];
     }
     _keyboardAppearance = keyboardAppearance;
