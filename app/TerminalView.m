@@ -48,7 +48,9 @@ struct rowcol {
 
 @property CGFloat lastPanY;
 @property CGFloat accumulatedScrollDelta;
+@property CGFloat panLineAccumulator;
 @property CGFloat scrollAccumulator;
+@property CGFloat scrollLineAccumulator;
 @property CGFloat lastScrollTop;
 @property BOOL resettingScroll;
 @property CGFloat characterHeight;
@@ -290,14 +292,17 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
         // Mouse reporting active — convert scroll to wheel events
         CGFloat delta = scrollView.contentOffset.y - self.lastScrollTop;
         self.scrollAccumulator += delta;
-        CGFloat baseThreshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
-        int speed = UserPreferences.shared.scrollSpeed.intValue ?: 10;
-        CGFloat threshold = baseThreshold * 10.0 / speed;
+        CGFloat threshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
+        CGFloat speedFactor = (UserPreferences.shared.scrollSpeed.intValue ?: 10) / 10.0;
         while (fabs(self.scrollAccumulator) >= threshold) {
             CGFloat direction = self.scrollAccumulator > 0 ? 1.0 : -1.0;
-            [self.terminal.webView evaluateJavaScript:
-                [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
-                completionHandler:nil];
+            self.scrollLineAccumulator += speedFactor;
+            while (self.scrollLineAccumulator >= 1.0) {
+                [self.terminal.webView evaluateJavaScript:
+                    [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
+                    completionHandler:nil];
+                self.scrollLineAccumulator -= 1.0;
+            }
             self.scrollAccumulator -= direction * threshold;
         }
         // Reset scroll position to prevent buffer scrolling
@@ -317,20 +322,24 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
     if (gesture.state == UIGestureRecognizerStateBegan) {
         self.lastPanY = 0;
         self.accumulatedScrollDelta = 0;
+        self.panLineAccumulator = 0;
     }
     CGFloat translationY = [gesture translationInView:self].y;
     CGFloat delta = translationY - self.lastPanY;
     self.lastPanY = translationY;
     // Accumulate pixel delta, fire one wheel event per character line height
     self.accumulatedScrollDelta += -delta;
-    CGFloat baseThreshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
-    int speed = UserPreferences.shared.scrollSpeed.intValue ?: 10;
-    CGFloat threshold = baseThreshold * 10.0 / speed;
+    CGFloat threshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
+    CGFloat speedFactor = (UserPreferences.shared.scrollSpeed.intValue ?: 10) / 10.0;
     while (fabs(self.accumulatedScrollDelta) >= threshold) {
         CGFloat direction = self.accumulatedScrollDelta > 0 ? 1.0 : -1.0;
-        [self.terminal.webView evaluateJavaScript:
-            [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
-            completionHandler:nil];
+        self.panLineAccumulator += speedFactor;
+        while (self.panLineAccumulator >= 1.0) {
+            [self.terminal.webView evaluateJavaScript:
+                [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
+                completionHandler:nil];
+            self.panLineAccumulator -= 1.0;
+        }
         self.accumulatedScrollDelta -= direction * threshold;
     }
 }
