@@ -62,7 +62,7 @@ char *previewString = "# cat /proc/ish/colors\r\n"
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [UserPreferences.shared observe:@[@"theme", @"fontSize", @"fontFamily", @"colorScheme"]
+    [UserPreferences.shared observe:@[@"theme", @"fontSize", @"fontFamily", @"colorScheme", @"scrollSpeed"]
                             options:0 owner:self usingBlock:^(typeof(self) self) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [self.tableView reloadData];
@@ -118,7 +118,7 @@ enum {
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     switch (section) {
         case PreviewSection: return 2;
-        case MainSection: return 3;
+        case MainSection: return 4;
         case ColorSchemeSection: return 3;
         case CursorSection: return 2;
         case StatusBarSection: return 1;
@@ -146,7 +146,7 @@ enum {
 - (NSString *)reuseIdentifierForIndexPath:(NSIndexPath *)indexPath {
     switch (indexPath.section) {
         case PreviewSection: return @[@"Preview", @"Color Scheme Preview"][indexPath.row];
-        case MainSection: return @[@"Theme Name", @"Font", @"Font Size"][indexPath.row];
+        case MainSection: return @[@"Theme Name", @"Font", @"Font Size", @"Scroll Speed"][indexPath.row];
         case ColorSchemeSection: return @"Color Scheme";
         case CursorSection: return @[@"Cursor Style", @"Blink Cursor"][indexPath.row];
         case StatusBarSection: return @"Status Bar";
@@ -200,6 +200,15 @@ enum {
                     UIStepper *stepper = [cell viewWithTag:2];
                     label.text = prefs.fontSize.stringValue;
                     stepper.value = prefs.fontSize.doubleValue;
+                    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+                    break;
+                }
+                case 3: {
+                    UserPreferences *prefs = [UserPreferences shared];
+                    UILabel *label = [cell viewWithTag:1];
+                    UIStepper *stepper = [cell viewWithTag:2];
+                    label.text = prefs.scrollSpeed.stringValue;
+                    stepper.value = prefs.scrollSpeed.doubleValue;
                     cell.selectionStyle = UITableViewCellSelectionStyleNone;
                     break;
                 }
@@ -285,6 +294,10 @@ enum {
 
 - (IBAction)fontSizeChanged:(UIStepper *)sender {
     UserPreferences.shared.fontSize = @((int) sender.value);
+}
+
+- (IBAction)scrollSpeedChanged:(UIStepper *)sender {
+    UserPreferences.shared.scrollSpeed = @((int) sender.value);
 }
 
 - (IBAction)hideStatusBarChanged:(UISwitch *)sender {

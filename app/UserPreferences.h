@@ -59,6 +59,7 @@ extern NSString *const kThemeBackgroundColor;
 @property (readonly) NSString *fontFamilyUserFacingName;
 @property (readonly) UIFont *approximateFont;
 @property NSNumber *fontSize;
+@property NSNumber *scrollSpeed;
 @property ColorScheme colorScheme;
 @property (readonly) BOOL requestingDarkAppearance;
 @property (readonly) UIUserInterfaceStyle userInterfaceStyle API_AVAILABLE(ios(12.0));

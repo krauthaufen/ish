@@ -18,6 +18,7 @@ static NSString *const kPreferenceHideExtraKeysWithExternalKeyboardKey = @"Hide 
 static NSString *const kPreferenceOverrideControlSpaceKey = @"Override Control Space";
 static NSString *const kPreferenceFontFamilyKey = @"Font Family";
 static NSString *const kPreferenceFontSizeKey = @"Font Size";
+static NSString *const kPreferenceScrollSpeedKey = @"Scroll Speed";
 static NSString *const kPreferenceThemeKey = @"ModernTheme";
 static NSString *const kPreferenceDisableDimmingKey = @"Disable Dimming";
 NSString *const kPreferenceLaunchCommandKey = @"Init Command";
@@ -154,6 +155,7 @@ bool (*remove_user_default)(const char *name);
         _defaults = [NSUserDefaults standardUserDefaults];
         [_defaults registerDefaults:@{
             kPreferenceFontSizeKey: @(12),
+            kPreferenceScrollSpeedKey: @(1),
             kPreferenceCapsLockMappingKey: @(CapsLockMapControl),
             kPreferenceOptionMappingKey: @(OptionMapNone),
             kPreferenceBacktickEscapeKey: @(NO),
@@ -193,6 +195,7 @@ bool (*remove_user_default)(const char *name);
             @"override_control_space": kPreferenceOverrideControlSpaceKey,
             @"font_family": kPreferenceFontFamilyKey,
             @"font_size": kPreferenceFontSizeKey,
+            @"scroll_speed": kPreferenceScrollSpeedKey,
             @"disable_dimming": kPreferenceDisableDimmingKey,
             @"launch_command": kPreferenceLaunchCommandKey,
             @"boot_command": kPreferenceBootCommandKey,
@@ -218,6 +221,7 @@ bool (*remove_user_default)(const char *name);
             kPreferenceOverrideControlSpaceKey: property(overrideControlSpace),
             kPreferenceFontFamilyKey: property(fontFamily),
             kPreferenceFontSizeKey: property(fontSize),
+            kPreferenceScrollSpeedKey: property(scrollSpeed),
             kPreferenceDisableDimmingKey: property(shouldDisableDimming),
             kPreferenceLaunchCommandKey: property(launchCommand),
             kPreferenceBootCommandKey: property(bootCommand),
@@ -324,6 +328,19 @@ bool (*remove_user_default)(const char *name);
 }
 
 - (BOOL)validateFontSize:(id *)value error:(NSError **)error {
+    return [*value isKindOfClass:NSNumber.class];
+}
+
+// MARK: scrollSpeed
+- (NSNumber *)scrollSpeed {
+    return [_defaults objectForKey:kPreferenceScrollSpeedKey];
+}
+
+- (void)setScrollSpeed:(NSNumber *)scrollSpeed {
+    [_defaults setObject:scrollSpeed forKey:kPreferenceScrollSpeedKey];
+}
+
+- (BOOL)validateScrollSpeed:(id *)value error:(NSError **)error {
     return [*value isKindOfClass:NSNumber.class];
 }
 

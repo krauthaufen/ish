@@ -291,11 +291,14 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
         CGFloat delta = scrollView.contentOffset.y - self.lastScrollTop;
         self.scrollAccumulator += delta;
         CGFloat threshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
+        int speed = UserPreferences.shared.scrollSpeed.intValue ?: 1;
         while (fabs(self.scrollAccumulator) >= threshold) {
             CGFloat direction = self.scrollAccumulator > 0 ? 1.0 : -1.0;
-            [self.terminal.webView evaluateJavaScript:
-                [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
-                completionHandler:nil];
+            for (int i = 0; i < speed; i++) {
+                [self.terminal.webView evaluateJavaScript:
+                    [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
+                    completionHandler:nil];
+            }
             self.scrollAccumulator -= direction * threshold;
         }
         // Reset scroll position to prevent buffer scrolling
@@ -322,11 +325,14 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
     // Accumulate pixel delta, fire one wheel event per character line height
     self.accumulatedScrollDelta += -delta;
     CGFloat threshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
+    int speed = UserPreferences.shared.scrollSpeed.intValue ?: 1;
     while (fabs(self.accumulatedScrollDelta) >= threshold) {
         CGFloat direction = self.accumulatedScrollDelta > 0 ? 1.0 : -1.0;
-        [self.terminal.webView evaluateJavaScript:
-            [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
-            completionHandler:nil];
+        for (int i = 0; i < speed; i++) {
+            [self.terminal.webView evaluateJavaScript:
+                [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
+                completionHandler:nil];
+        }
         self.accumulatedScrollDelta -= direction * threshold;
     }
 }
