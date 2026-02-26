@@ -50,6 +50,9 @@ typedef struct linux_tty *tty_t;
 @end
 @implementation CustomWebView
 - (BOOL)becomeFirstResponder {
+    if (@available(iOS 13.4, *)) {
+        return [super becomeFirstResponder];
+    }
     return NO;
 }
 

@@ -55,6 +55,7 @@ struct rowcol {
 @property BOOL resettingScroll;
 @property CGFloat characterHeight;
 @property UIPanGestureRecognizer *mouseScrollGesture;
+@property BOOL intentionalResign;
 
 @end
 
@@ -228,7 +229,16 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 }
 - (BOOL)resignFirstResponder {
     self.terminalFocused = NO;
-    return [super resignFirstResponder];
+    BOOL result = [super resignFirstResponder];
+    if (!self.intentionalResign) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (!self.isFirstResponder) {
+                [self becomeFirstResponder];
+            }
+        });
+    }
+    self.intentionalResign = NO;
+    return result;
 }
 - (void)windowDidBecomeKey:(NSNotification *)notif {
     self.terminalFocused = YES;
@@ -238,6 +248,7 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 }
 
 - (IBAction)loseFocus:(id)sender {
+    self.intentionalResign = YES;
     [self resignFirstResponder];
 }
 
@@ -352,12 +363,19 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-    return NO;
+    // Block simultaneous recognition with the scroll view to prevent
+    // double scroll events, but allow other gestures (e.g. selection)
+    if (gestureRecognizer == self.mouseScrollGesture &&
+        [otherGestureRecognizer.view isKindOfClass:[UIScrollView class]]) {
+        return NO;
+    }
+    return YES;
 }
 
 - (void)setKeyboardAppearance:(UIKeyboardAppearance)keyboardAppearance {
     BOOL needsFirstResponderDance = self.isFirstResponder && _keyboardAppearance != keyboardAppearance;
     if (needsFirstResponderDance) {
+        self.intentionalResign = YES;
         [self resignFirstResponder];
     }
     _keyboardAppearance = keyboardAppearance;
