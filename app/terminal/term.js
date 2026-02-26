@@ -66,6 +66,7 @@ let decoder = new TextDecoder();
 exports.write = (data) => {
     term.io.writeUTF16(decoder.decode(lib.codec.stringToCodeUnitArray(data)));
     syncProp('applicationCursor', term.keyboard.applicationCursor);
+    syncProp('mouseReport', term.vt.mouseReport);
 };
 term.io.sendString = term.io.onVTKeyStroke = (data) => {
     native.sendInput(data);
@@ -115,6 +116,21 @@ exports.newScrollTop = (y) => {
     // two lines instead of one because the value you read out of scrollTop can be different from the value you write into it
     term.scrollPort_.screen_.scrollTop = y;
     lastScrollTop = term.scrollPort_.screen_.scrollTop;
+};
+
+// Send mouse wheel events to the application when mouse reporting is active
+exports.sendMouseWheel = (deltaY) => {
+    if (term.vt.mouseReport == term.vt.MOUSE_REPORT_DISABLED) return;
+    const size = exports.getSize();
+    // Feed a fake event directly to the VT mouse handler
+    term.vt.onTerminalMouse_({
+        type: 'wheel',
+        deltaY: deltaY,
+        terminalRow: Math.floor(size[1] / 2),
+        terminalColumn: Math.floor(size[0] / 2),
+        shiftKey: false, altKey: false, ctrlKey: false, metaKey: false,
+        preventDefault: () => {},
+    });
 };
 
 // Send scroll height and position to native code

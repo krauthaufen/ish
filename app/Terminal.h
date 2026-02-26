@@ -35,6 +35,8 @@ struct tty;
 @property (nonatomic) BOOL enableVoiceOverAnnounce;
 // Use KVO on this
 @property (readonly) BOOL loaded;
+// Synced from hterm vt.mouseReport (0=disabled, 1=press, 2=click, 3=drag)
+@property (readonly) NSNumber *mouseReport;
 
 @end
 

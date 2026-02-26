@@ -39,6 +39,7 @@ typedef struct linux_tty *tty_t;
 @property DelayedUITask *scrollToBottomTask;
 
 @property BOOL applicationCursor;
+@property NSNumber *mouseReport;
 
 @property NSNumber *terminalsKey;
 @property NSUUID *uuid;

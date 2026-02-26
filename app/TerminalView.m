@@ -46,6 +46,11 @@ struct rowcol {
 @property CGSize floatingCursorSensitivity;
 @property CGSize actualFloatingCursorSensitivity;
 
+@property CGFloat lastPanY;
+@property CGFloat accumulatedScrollDelta;
+@property CGFloat characterHeight;
+@property UIPanGestureRecognizer *mouseScrollGesture;
+
 @end
 
 @implementation TerminalView
@@ -63,6 +68,11 @@ struct rowcol {
     scrollbarView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     scrollbarView.bounces = NO;
     [self addSubview:scrollbarView];
+
+    UIPanGestureRecognizer *mouseScroll = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleMouseScroll:)];
+    mouseScroll.delegate = self;
+    self.mouseScrollGesture = mouseScroll;
+    [self addGestureRecognizer:mouseScroll];
 
     UserPreferences *prefs = UserPreferences.shared;
     [prefs observe:@[@"capsLockMapping", @"optionMapping", @"backtickMapEscape", @"overrideControlSpace"]
@@ -271,6 +281,39 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
     [self.terminal.webView evaluateJavaScript:[NSString stringWithFormat:@"exports.newScrollTop(%f)", scrollView.contentOffset.y] completionHandler:nil];
 }
 
+#pragma mark Mouse scroll gesture
+
+- (void)handleMouseScroll:(UIPanGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateBegan) {
+        self.lastPanY = 0;
+        self.accumulatedScrollDelta = 0;
+    }
+    CGFloat translationY = [gesture translationInView:self].y;
+    CGFloat delta = translationY - self.lastPanY;
+    self.lastPanY = translationY;
+    // Accumulate pixel delta, fire one wheel event per character line height
+    self.accumulatedScrollDelta += -delta;
+    CGFloat threshold = self.characterHeight > 0 ? self.characterHeight : 20.0;
+    while (fabs(self.accumulatedScrollDelta) >= threshold) {
+        CGFloat direction = self.accumulatedScrollDelta > 0 ? 1.0 : -1.0;
+        [self.terminal.webView evaluateJavaScript:
+            [NSString stringWithFormat:@"exports.sendMouseWheel(%f)", direction]
+            completionHandler:nil];
+        self.accumulatedScrollDelta -= direction * threshold;
+    }
+}
+
+- (BOOL)gestureRecognizerShouldBegin:(UIGestureRecognizer *)gestureRecognizer {
+    if (gestureRecognizer == self.mouseScrollGesture) {
+        return self.terminal.mouseReport.intValue > 0;
+    }
+    return YES;
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return NO;
+}
+
 - (void)setKeyboardAppearance:(UIKeyboardAppearance)keyboardAppearance {
     BOOL needsFirstResponderDance = self.isFirstResponder && _keyboardAppearance != keyboardAppearance;
     if (needsFirstResponderDance) {
@@ -389,6 +432,7 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
             return;
         }
         CGSize charSize = CGSizeMake([charSizeRaw[0] doubleValue], [charSizeRaw[1] doubleValue]);
+        self.characterHeight = charSize.height;
         double sensitivity = 0.5;
         self.floatingCursorSensitivity = CGSizeMake(charSize.width / sensitivity, charSize.height / sensitivity);
     }];
