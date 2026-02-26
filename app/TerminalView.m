@@ -55,7 +55,6 @@ struct rowcol {
 @property BOOL resettingScroll;
 @property CGFloat characterHeight;
 @property UIPanGestureRecognizer *mouseScrollGesture;
-@property BOOL allowResign;
 
 @end
 
@@ -228,8 +227,6 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
     return [super becomeFirstResponder];
 }
 - (BOOL)resignFirstResponder {
-    if (!self.allowResign) return NO;
-    self.allowResign = NO;
     self.terminalFocused = NO;
     return [super resignFirstResponder];
 }
@@ -241,7 +238,6 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 }
 
 - (IBAction)loseFocus:(id)sender {
-    self.allowResign = YES;
     [self resignFirstResponder];
 }
 
@@ -362,7 +358,6 @@ static NSString *const HANDLERS[] = {@"syncFocus", @"focus", @"newScrollHeight",
 - (void)setKeyboardAppearance:(UIKeyboardAppearance)keyboardAppearance {
     BOOL needsFirstResponderDance = self.isFirstResponder && _keyboardAppearance != keyboardAppearance;
     if (needsFirstResponderDance) {
-        self.allowResign = YES;
         [self resignFirstResponder];
     }
     _keyboardAppearance = keyboardAppearance;
