@@ -208,7 +208,11 @@ enum {
                     UILabel *label = [cell viewWithTag:1];
                     UIStepper *stepper = [cell viewWithTag:2];
                     label.text = prefs.scrollSpeed.stringValue;
+                    stepper.minimumValue = 1;
+                    stepper.maximumValue = 20;
                     stepper.value = prefs.scrollSpeed.doubleValue;
+                    [stepper removeTarget:nil action:NULL forControlEvents:UIControlEventValueChanged];
+                    [stepper addTarget:self action:@selector(scrollSpeedChanged:) forControlEvents:UIControlEventValueChanged];
                     cell.selectionStyle = UITableViewCellSelectionStyleNone;
                     break;
                 }
